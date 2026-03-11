@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portfilepace | Archive OS</title>
+    
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='25' fill='%23050510'/%3E%3Cpath d='M50 25 L80 75 L20 75 Z' fill='none' stroke='%2300d2ff' stroke-width='6' stroke-linejoin='round'/%3E%3Cpath d='M38 62 L62 62' fill='none' stroke='%239d50bb' stroke-width='6' stroke-linecap='round'/%3E%3Ccircle cx='50' cy='48' r='4' fill='%23fff'/%3E%3C/svg%3E">
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Rajdhani:wght@300;500;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    
+    <style>
+        /* ================================================================
+        1. SYSTEM VARIABLES & THEME
+        ================================================================ */
+        :root {
+            --neon-blue: #00d2ff;
+            --neon-purple: #9d50bb;
+            --space-black: #020205;
+            --glass: rgba(10, 10, 25, 0.7);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --text-primary: #f8fafc;
+            --text-dim: #94a3b8;
+            --font-accent: 'Orbitron', sans-serif;
+            --font-main: 'Rajdhani', sans-serif;
+            --font-code: 'Fira Code', monospace;
+            --transition: cubic-bezier(0.23, 1, 0.32, 1);
+        }
+
+        /* ================================================================
+        2. RESET & GLOBAL STYLES
+        ================================================================ */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            outline: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            background-color: var(--space-black);
+            color: var(--text-primary);
+            font-family: var(--font-main);
+            overflow-x: hidden;
+            line-height: 1.6;
+            cursor: none; /* Custom Cursor Enabled */
+        }
+
+        /* Responsive Cursor handling */
+        @media (pointer: coarse) {
+            body { cursor: auto !important; }
+            #custom-cursor, #cursor-aura { display: none !important; }
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: var(--space-black);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(var(--neon-purple), var(--neon-blue));
+            border-radius: 10px;
+        }
+
+        /* ================================================================
+        3. CUSTOM INTERACTION ENGINE (SMOOTH LERP CURSOR)
+        ================================================================ */
+        #custom-cursor {
+            position: fixed;
+            width: 8px;
+            height: 8px;
+            background: #fff;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 10001;
+            transform: translate(-50%, -50%);
+            transition: width 0.3s, height 0.3s, opacity 0.3s;
+        }
+
+        #cursor-aura {
+            position: fixed;
+            width: 45px;
+            height: 45px;
+            border: 2px solid var(--neon-blue);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 10000;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 0 15px var(--neon-blue);
+            will-change: transform;
+        }
+
+        .show-real-cursor {
+            cursor: auto !important;
+        }
+
+        /* ================================================================
+        4. STARFIELD CANVAS
+        ================================================================ */
+        #starfield {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background: radial-gradient(circle at center, #050515 0%, #010103 100%);
+        }
+
+        /* ================================================================
+        5. ARCHIVE NAVIGATION
+        ================================================================ */
+        nav {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            padding: 1.5rem 5%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 5000;
+            background: rgba(2, 2, 5, 0.85);
+            backdrop-filter: blur(15px);
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        .logo-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            text-decoration: none;
+        }
+
+        .logo-mark {
+            width: 32px;
+            height: 32px;
+            border: 2px solid var(--neon-blue);
+            transform: rotate(45deg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 10px var(--neon-blue);
+        }
+
+        .logo-mark span {
+            transform: rotate(-45deg);
+            font-family: var(--font-accent);
+            font-size: 0.7rem;
+            color: #fff;
+        }
+
+        .logo-text {
+            font-family: var(--font-accent);
+            font-size: 1.1rem;
+            letter-spacing: 4px;
+            color: #fff;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 3rem;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: var(--text-dim);
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            transition: 0.3s;
+            position: relative;
+        }
+
+        .nav-links a:hover {
+            color: var(--neon-blue);
+        }
+
+        .nav-links a::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 0;
+            width: 0%;
+            height: 1px;
+            background: var(--neon-blue);
+            transition: 0.3s;
+        }
+
+        .nav-links a:hover::after {
+            width: 100%;
+        }
+
+        /* ================================================================
+        6. HERO & HUB SECTION
+        ================================================================ */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 120px 10% 50px;
+        }
+
+        .status-tag {
+            font-family: var(--font-code);
+            color: var(--neon-purple);
+            font-size: 0.8rem;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .pulse-dot {
+            width: 6px;
+            height: 6px;
+            background: var(--neon-purple);
+            border-radius: 50%;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(2.5); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .hero h1 {
+            font-family: var(--font-accent);
+            font-size: clamp(3rem, 10vw, 8rem);
+            line-height: 0.85;
+            margin-bottom: 2rem;
+            background: linear-gradient(to right, #fff, var(--neon-blue));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* ================================================================
+        7. UTILITY CHAIN MEGA LINK
+        ================================================================ */
+        .utility-mega-container {
+            width: 100%;
+            max-width: 900px;
+            margin: 2rem 0;
+        }
+
+        .utility-link {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 3rem;
+            background: linear-gradient(135deg, rgba(0, 210, 255, 0.05), rgba(157, 80, 187, 0.05));
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            text-decoration: none;
+            transition: all 0.5s var(--transition);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .utility-link::before {
+            content: '';
+            position: absolute;
+            top: 0; left: -100%;
+            width: 100%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent);
+            transition: 0.5s;
+        }
+
+        .utility-link:hover::before {
+            left: 100%;
+        }
+
+        .utility-link:hover {
+            transform: translateY(-5px);
+            border-color: var(--neon-blue);
+            box-shadow: 0 20px 60px rgba(0, 210, 255, 0.15);
+        }
+
+        .utility-content h2 {
+            font-family: var(--font-accent);
+            font-size: 2.5rem;
+            color: #fff;
+            margin-bottom: 5px;
+        }
+
+        .utility-content p {
+            color: var(--neon-blue);
+            font-family: var(--font-code);
+            font-size: 0.9rem;
+            letter-spacing: 2px;
+        }
+
+        .utility-icon {
+            font-size: 3rem;
+            color: var(--neon-blue);
+            transition: 0.5s;
+        }
+
+        .utility-link:hover .utility-icon {
+            transform: translateX(10px) rotate(15deg);
+        }
+
+        /* ================================================================
+        8. REPOSITORY GRID
+        ================================================================ */
+        .repository {
+            padding: 100px 10%;
+        }
+
+        .section-label {
+            font-family: var(--font-accent);
+            letter-spacing: 5px;
+            color: var(--neon-purple);
+            margin-bottom: 3rem;
+            display: block;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 25px;
+        }
+
+        .repo-card {
+            background: var(--glass);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 40px;
+            transition: 0.4s var(--transition);
+            position: relative;
+            height: 400px;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+        }
+
+        .repo-card:hover {
+            border-color: var(--neon-blue);
+            background: rgba(10, 10, 30, 0.8);
+            transform: scale(1.02);
+        }
+
+        .repo-card h3 {
+            font-family: var(--font-accent);
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+        }
+
+        .repo-card p {
+            color: var(--text-dim);
+            font-size: 0.95rem;
+        }
+
+        .repo-card .card-num {
+            position: absolute;
+            top: 40px;
+            right: 40px;
+            font-family: var(--font-code);
+            opacity: 0.2;
+            font-size: 2rem;
+        }
+
+        /* ================================================================
+        9. TERMINAL & CODE REPOSITORY
+        ================================================================ */
+        .terminal-wrap {
+            padding: 50px 10% 150px;
+        }
+
+        .terminal-window {
+            background: #000;
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 40px 100px rgba(0,0,0,0.8);
+        }
+
+        .terminal-header {
+            background: #111;
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-bottom: 1px solid #222;
+        }
+
+        .t-dot { width: 12px; height: 12px; border-radius: 50%; }
+        .t-red { background: #ff5f56; }
+        .t-yellow { background: #ffbd2e; }
+        .t-green { background: #27c93f; }
+
+        .code-area {
+            padding: 30px;
+            font-family: var(--font-code);
+            font-size: 0.9rem;
+            color: #d1d1e0;
+            line-height: 1.8;
+            cursor: auto; /* Real cursor shows here */
+            overflow-x: auto;
+        }
+
+        .keyword { color: var(--neon-purple); }
+        .func { color: var(--neon-blue); }
+        .string { color: #50fa7b; }
+        .comment { color: #6272a4; font-style: italic; }
+
+        /* ================================================================
+        10. FEEDBACK TRANS MISSION
+        ================================================================ */
+        .feedback-section {
+            padding: 100px 10%;
+            background: linear-gradient(to bottom, transparent, #050510);
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 50px;
+        }
+
+        .feedback-form input, 
+        .feedback-form textarea {
+            width: 100%;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid var(--glass-border);
+            padding: 1.2rem;
+            margin-bottom: 1rem;
+            border-radius: 8px;
+            color: #fff;
+            font-family: var(--font-main);
+            font-size: 1rem;
+            cursor: auto;
+        }
+
+        .feedback-form input:focus, 
+        .feedback-form textarea:focus {
+            border-color: var(--neon-blue);
+            background: rgba(255,255,255,0.05);
+        }
+
+        .transmit-btn {
+            background: var(--neon-blue);
+            color: #000;
+            border: none;
+            padding: 1.2rem 3rem;
+            font-family: var(--font-accent);
+            font-weight: 700;
+            border-radius: 8px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            transition: 0.4s;
+            width: 100%;
+        }
+
+        .transmit-btn:hover {
+            background: #fff;
+            box-shadow: 0 0 30px var(--neon-blue);
+            transform: translateY(-3px);
+        }
+
+        /* ================================================================
+        11. FOOTER & DIAGNOSTICS
+        ================================================================ */
+        footer {
+            padding: 50px 10%;
+            border-top: 1px solid var(--glass-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-family: var(--font-code);
+            font-size: 0.75rem;
+            color: var(--text-dim);
+        }
+
+        /* Mobile Adjustments */
+        @media (max-width: 850px) {
+            .feedback-section { grid-template-columns: 1fr; }
+            .nav-links { display: none; }
+            .hero h1 { font-size: 4rem; }
+            .utility-link { padding: 2rem; }
+        }
+    </style>
+</head>
+<body id="master-body">
+
+    <div id="custom-cursor"></div>
+    <div id="cursor-aura"></div>
+    <canvas id="starfield"></canvas>
+
+    <nav>
+        <a href="#" class="logo-container">
+            <div class="logo-mark"><span>A</span></div>
+            <div class="logo-text">PORTFILEPACE</div>
+        </a>
+        <div class="nav-links">
+            <a href="#master-body">Start</a>
+            <a href="#repos">Archive</a>
+            <a href="#feedback">Contact</a>
+        </div>
+    </nav>
+
+    <section class="hero">
+        <div class="status-tag">
+            <div class="pulse-dot"></div>
+            SYSTEM ONLINE // ARCHIVE_INIT_COMPLETE
+        </div>
+        <h1>THE<br>PORTFOLIO<br>VOICE.</h1>
+        <p style="margin-bottom: 2rem; font-size: 1.2rem; max-width: 550px;">
+            Archiving high-fidelity 3D assets, C# system logic, and experimental web interfaces.
+        </p>
+
+        <div class="utility-mega-container">
+            <a href="https://khajaupi.github.io/UtilityChain/#" class="utility-link">
+                <div class="utility-content">
+                    <h2>UTILITY CHAIN</h2>
+                    <p>[ CLICK_TO_LAUNCH_PORTAL ]</p>
+                </div>
+                <div class="utility-icon">↗</div>
+            </a>
+        </div>
+    </section>
+
+    <section class="repository" id="repos">
+        <span class="section-label">01 // CREATION_LOG</span>
+        <div class="grid">
+            <div class="repo-card">
+                <div class="card-num">01</div>
+                <h3>Blender Core</h3>
+                <p>Advanced procedural materials and geometric node experiments.</p>
+            </div>
+            <div class="repo-card">
+                <div class="card-num">02</div>
+                <h3>Logic Engine</h3>
+                <p>C# and .NET 10 implementation of lightweight Windows utilities.</p>
+            </div>
+            <div class="repo-card">
+                <div class="card-num">03</div>
+                <h3>Aero UI</h3>
+                <p>Space-themed frontend components with focused responsiveness.</p>
+            </div>
+        </div>
+    </section>
+
+    <section class="terminal-wrap">
+        <span class="section-label">02 // SOURCE_ARCHIVE</span>
+        <div class="terminal-window">
+            <div class="terminal-header">
+                <div class="t-dot t-red"></div>
+                <div class="t-dot t-yellow"></div>
+                <div class="t-dot t-green"></div>
+                <span style="font-family: var(--font-code); font-size: 0.7rem; opacity: 0.5; margin-left: 10px;">Archive_System_Main.cs</span>
+            </div>
+            <div class="code-area" id="code-interaction">
+                <span class="comment">// Professional System Logic initialized</span><br>
+                <span class="keyword">using</span> System;<br>
+                <span class="keyword">namespace</span> <span class="func">Portfilepace.Core</span> {<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">public class</span> <span class="func">SystemProcessor</span> {<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">public void</span> <span class="func">ExecuteCreation</span>() {<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Console.<span class="func">WriteLine</span>(<span class="string">"Interface Running..."</span>);<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">// Visuals optimized for mobile & desktop</span><br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;InitializeSpaceTheme();<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;}<br>
+                }
+            </div>
+        </div>
+    </section>
+
+    <section class="feedback-section" id="feedback">
+        <div>
+            <span class="section-label">03 // TRANSMISSION</span>
+            <h2 style="font-family: var(--font-accent); font-size: 2.5rem; margin-bottom: 1.5rem;">Send Feedback.</h2>
+            <p style="color: var(--text-dim); line-height: 1.8;">
+                This portal is strictly for reporting performance logs or providing project feedback. All transmissions are routed to the central business node.
+            </p>
+            <div style="margin-top: 2rem; color: var(--neon-blue); font-family: var(--font-code);">
+                ID: Loginbusiness1k@gmail.com
+            </div>
+        </div>
+        <div class="feedback-form">
+            <form action="mailto:Loginbusiness1k@gmail.com" method="post" enctype="text/plain">
+                <input type="text" name="Sender" placeholder="SENDER_NAME" required>
+                <input type="email" name="Email" placeholder="SENDER_EMAIL" required>
+                <textarea name="Message" rows="6" placeholder="ENTER_MESSAGE_LOG..." required></textarea>
+                <button type="submit" class="transmit-btn">Execute Transmission</button>
+            </form>
+        </div>
+    </section>
+
+    <footer>
+        <div>PORTFILEPACE_OS // VERSION_2.6.5</div>
+        <div>AUSTRALIA_SERVER_NODE_2026</div>
+        <div style="opacity: 0.5;">FUTURISTIC_ARCHIVE_ESTABLISHED</div>
+    </footer>
+
+    <script>
+        /* ================================================================
+        12. JAVASCRIPT CORE ENGINE
+        ================================================================ */
+
+        // Starfield Generation
+        const canvas = document.getElementById('starfield');
+        const ctx = canvas.getContext('2d');
+        let stars = [];
+
+        function initStars() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            stars = [];
+            for(let i=0; i<150; i++) {
+                stars.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    z: Math.random() * canvas.width,
+                    size: Math.random() * 1.5
+                });
+            }
+        }
+
+        function animateStars() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            stars.forEach(s => {
+                let x = (s.x - canvas.width/2) * (canvas.width/s.z) + canvas.width/2;
+                let y = (s.y - canvas.height/2) * (canvas.width/s.z) + canvas.height/2;
+                let sz = (1 - s.z/canvas.width) * 2.5;
+                
+                ctx.fillStyle = `rgba(0, 210, 255, ${1 - s.z/canvas.width})`;
+                ctx.beginPath();
+                ctx.arc(x, y, sz, 0, Math.PI*2);
+                ctx.fill();
+                
+                s.z -= 0.5;
+                if(s.z <= 0) s.z = canvas.width;
+            });
+            requestAnimationFrame(animateStars);
+        }
+
+        // Smoothed Cursor Logic (LERP)
+        const dot = document.getElementById('custom-cursor');
+        const aura = document.getElementById('cursor-aura');
+        const body = document.getElementById('master-body');
+        
+        let mX = 0, mY = 0;
+        let aX = 0, aY = 0;
+
+        window.addEventListener('mousemove', (e) => {
+            mX = e.clientX;
+            mY = e.clientY;
+            dot.style.left = mX + 'px';
+            dot.style.top = mY + 'px';
+
+            // Detect interactive elements to toggle real cursor
+            const target = e.target.closest('input, textarea, .code-area, button, .utility-link');
+            if (target) {
+                body.classList.add('show-real-cursor');
+                dot.style.opacity = '0';
+                aura.style.opacity = '0';
+            } else {
+                body.classList.remove('show-real-cursor');
+                dot.style.opacity = '1';
+                aura.style.opacity = '1';
+            }
+        });
+
+        function updateAura() {
+            // Lerp math for smoothness: current + (target - current) * factor
+            aX += (mX - aX) * 0.15;
+            aY += (mY - aY) * 0.15;
+            aura.style.left = aX + 'px';
+            aura.style.top = aY + 'px';
+            requestAnimationFrame(updateAura);
+        }
+
+        // Initialize Core Systems
+        window.onload = () => {
+            initStars();
+            animateStars();
+            updateAura();
+            
+            // Interaction Hover Effects
+            document.querySelectorAll('.repo-card, .utility-link').forEach(card => {
+                card.addEventListener('mouseenter', () => {
+                    aura.style.transform = 'translate(-50%, -50%) scale(1.5)';
+                    aura.style.borderColor = 'var(--neon-purple)';
+                });
+                card.addEventListener('mouseleave', () => {
+                    aura.style.transform = 'translate(-50%, -50%) scale(1)';
+                    aura.style.borderColor = 'var(--neon-blue)';
+                });
+            });
+        };
+
+        window.addEventListener('resize', initStars);
+
+    </script>
+</body>
+</html>
